@@ -12,5 +12,12 @@
         "nombre": "Fabio Flores",
         "ficha": "4444",
         "programa": "Adso"
+    },
+    {
+        "tipo_doc": "CC",
+        "documento": "1243897180",
+        "nombre": "Juan Miguel",
+        "ficha": "3406204",
+        "programa": "Adso"
     }
 ]
