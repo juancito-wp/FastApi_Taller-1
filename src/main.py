@@ -1,65 +1,133 @@
-import sys
-import os
+from fastapi import FastAPI, HTTPException
+from src.models import trainee_model
+from src.services.rick_morty_api import (
+    fetch_character_by_id,
+    fetch_random_character,
+)
 
-# Aseguramos que Python reconozca la raíz del proyecto para importar desde 'src'
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from src.views import trainee_view
+app = FastAPI(title="Rick and Morty API Service")
 
 # ==========================================
-# PUNTO 7: MENÚ PRINCIPAL
+# RICK AND MORTY API
 # ==========================================
 
-def display_main_menu():
-    """Muestra las opciones del menú principal en la consola."""
-    print("\n" + "=" * 45)
-    print("     SISTEMA DE GESTIÓN DE APRENDICES      ")
-    print("=" * 45)
-    print("1. Registrar nuevo aprendiz")
-    print("2. Ver lista de aprendices")
-    print("3. Editar datos de aprendiz")
-    print("4. Eliminar aprendiz")
-    print("5. Buscar aprendiz (por nombre o ficha)")
-    print("6. Exportar lista a CSV")
-    print("7. Salir")
-    print("=" * 45)
 
-def main():
-    """Función principal que controla el flujo de la aplicación."""
-    # Inicializa el directorio data/ y los datos
-    trainee_view.init_app_data()
+@app.get("/")
+async def root():
+    return {"message": "¡Bienvenido a la API de Rick and Morty!"}
 
-    while True:
-        display_main_menu()
-        option = input("Seleccione una opción (1-7): ").strip()
 
-        if option == "1":
-            trainee_view.register_trainee_view()
-        elif option == "2":
-            trainee_view.status_view()
-        elif option == "3":
-            trainee_view.edit_trainee_view()
-        elif option == "4":
-            trainee_view.delete_trainee_view()
-        elif option == "5":
-            trainee_view.search_trainees_view()
-        elif option == "6":
-            trainee_view.export_trainees_view()
-        elif option == "7":
-            print("\n👋 ¡Gracias por usar el sistema! Saliendo del programa...")
-            break
-        else:
-            print("❌ Opción inválida. Por favor, seleccione un número del 1 al 7.")
+@app.get("/character/random")
+async def get_random_character():
+    character = await fetch_random_character()
+    if not character:
+        raise HTTPException(
+            status_code=500, detail="Error al consultar la API externa"
+        )
 
-if __name__ == "__main__":
-    main()
+    return character
 
-"""
-Actividades a realizar:
-1. Refactorizar ruta del archivo JSON en la carpeta data/
-2. Refactorizar validaciones de los datos de entrada(incluir el correo electrónico) en la vista para que sean más robustas y claras.(Númerica, alfabética, correo electrónico, etc.)
-3. Implementar el editar de aprendices para permitir modificar los datos de un aprendiz existente.
-4. Implementar la eliminación de aprendices para permitir borrar un aprendiz existente de la lista.
-5. Implementar la búsqueda de aprendices por nombre o ficha para facilitar la localización de registros específicos.
-6. Implementar la exportación de la lista de aprendices a un archivo CSV para facilitar el manejo de datos fuera del programa.
-7. Implementar un menú principal para que el usuario pueda elegir entre registrar, editar, eliminar, buscar o exportar aprendices, en lugar de solo registrar uno tras otro."""
+
+@app.get("/character/{character_id}")
+async def get_character(character_id: int):
+    if character_id < 1 or character_id > 826:
+        raise HTTPException(
+            status_code=400,
+            detail="El ID del personaje debe estar entre 1 y 826.",
+        )
+
+    character = await fetch_character_by_id(character_id)
+
+    if not character:
+        raise HTTPException(
+            status_code=404, detail="Personaje no encontrado"
+        )
+
+    return character
+
+
+# ==========================================
+# GESTIÓN DE APRENDICES
+# ==========================================
+
+
+@app.get("/trainees")
+async def get_trainees():
+    """Obtiene todos los aprendices registrados."""
+    trainees = trainee_model.load_trainees()
+    return trainees
+
+
+@app.get("/trainees/{document}")
+async def get_trainee(document: str):
+    """Obtiene un aprendiz por su número de documento."""
+    trainee = trainee_model.search_by_document(document)
+
+    if not trainee:
+        raise HTTPException(
+            status_code=404, detail="Aprendiz no encontrado"
+        )
+
+    return trainee
+
+
+@app.post("/trainees")
+async def create_trainee(data: dict):
+    """Registra un nuevo aprendiz."""
+    document = data.get("documento")
+
+    if not document:
+        raise HTTPException(
+            status_code=400, detail="El número de documento es obligatorio"
+        )
+
+    existing_trainee = trainee_model.search_by_document(document)
+
+    if existing_trainee:
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe un aprendiz con este número de documento",
+        )
+
+    trainee_model.register_trainee(data)
+
+    return {"message": "Aprendiz registrado exitosamente", "trainee": data}
+
+
+@app.put("/trainees/{document}")
+async def update_trainee(document: str, data: dict):
+    """Actualiza los datos de un aprendiz."""
+    updated = trainee_model.update_trainee(document, data)
+
+    if not updated:
+        raise HTTPException(
+            status_code=404, detail="Aprendiz no encontrado"
+        )
+
+    return {"message": "Aprendiz actualizado exitosamente"}
+
+
+@app.delete("/trainees/{document}")
+async def delete_trainee(document: str):
+    """Elimina un aprendiz."""
+    deleted = trainee_model.delete_trainee(document)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404, detail="Aprendiz no encontrado"
+        )
+
+    return {"message": "Aprendiz eliminado exitosamente"}
+
+
+@app.get("/trainees/search/{term}")
+async def search_trainees(term: str):
+    """Busca aprendices por nombre o número de ficha."""
+    results = trainee_model.search_trainees_by_term(term)
+
+    if not results:
+        raise HTTPException(
+            status_code=404, detail="No se encontraron aprendices"
+        )
+
+    return results

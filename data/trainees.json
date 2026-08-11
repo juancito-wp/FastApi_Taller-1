@@ -19,5 +19,37 @@
         "nombre": "Juan Miguel",
         "ficha": "3406204",
         "programa": "Adso"
+    },
+    {
+        "tipo_doc": "CC",
+        "documento": "123456789",
+        "nombre": "Juan Miguel",
+        "correo": "juamdoiejd@gmail.com",
+        "ficha": "34234",
+        "programa": "Adso"
+    },
+    {
+        "tipo_doc": "TI",
+        "documento": "47892",
+        "nombre": "Gordito",
+        "correo": "gordogmail.com",
+        "ficha": "233123",
+        "programa": "Adso"
+    },
+    {
+        "tipo_doc": "TI",
+        "documento": "124321",
+        "nombre": "Adhksqjl",
+        "correo": "jashdf@gamil.com",
+        "ficha": "4303458",
+        "programa": "Adso"
+    },
+    {
+        "tipo_doc": "TI",
+        "documento": "21331",
+        "nombre": "Juancito",
+        "correo": "juancho@gmail.com",
+        "ficha": "324234",
+        "programa": "Adso"
     }
 ]
